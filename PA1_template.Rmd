@@ -16,7 +16,8 @@ dir() # check the files in working dir
 library(dplyr)
 library(data.table)
 library(ggplot2)
-##library(tidyverse)
+library(lubridate)
+library(tidyr)
 
 ```
 
@@ -51,7 +52,7 @@ histo
 ```
 ### Calculate and report the mean and median of the total number of steps taken per day
 
-```{r}
+```{r, echo=TRUE}
 mean_median_original <- histo %>%
         summarize(
                 mean_steps_pd = mean(total_o, na.rm = TRUE),
@@ -69,7 +70,7 @@ avg_steps <- activity %>%
 avg_steps
 ```
 ### Create a time series plot (decided to used ggplot) avg_steps (y-axis and interval (x-axis)
-```{r}
+```{r, echo=TRUE}
 p <- ggplot(avg_steps, aes(x = interval, y = mean)) +
   geom_line(color = "steelblue", linewidth = 1) +   # Line (type = 1)
   labs(title = "Average Daily Activity Pattern", x = "Interval", y = "Average Steps per Interval") +
@@ -79,7 +80,7 @@ p
 ```
 
 ### Which 5-minute interval contain maximum average steps over Oct and Nov 2012
-```{r}
+```{r, echo=TRUE}
 summary(avg_steps$mean) ## to see max value in summary stats
 max_steps_interval <- avg_steps[which.max(avg_steps$mean), "interval"]
 max_steps_interval
@@ -133,7 +134,7 @@ histo_i
 ### Calculate and report the mean and median of the total number of steps taken
 using imputed dataset
 
-```{r}
+```{r, echo=TRUE}
 mean_median_imputed <- histo_i %>%
         summarize(
                 mean_steps_pd = mean(total_i, na.rm = TRUE),
@@ -149,4 +150,31 @@ compare
 # Major differences in mean and minor differences in median value were observed
 ```
 ## Are there differences in activity patterns between weekdays and weekends?
+### Create a factor variable for "weekday" or "weekend"
+```{r, echo=TRUE}
+activity2 <- activity_impute %>%
+  mutate(date = as.Date(date)) %>%
+  mutate(
+    day_type = ifelse(weekdays(date) %in% c("Saturday", "Sunday"), "Weekend", "Weekday")
+  )
+head(activity2)
+```
 
+### Calculate the average number of steps across all weekday days or weekend days
+```{r, echo=TRUE}
+steps_day <- activity2 %>%
+                group_by(day_type, interval) %>%
+                summarize(mean = mean(steps_imputed, na.rm = TRUE))
+head(steps_day)
+summary(steps_day$mean)
+```
+### Create a panel plot to compare activity weekday vs weekend
+# Note: I used ggplot instead of base or lattice plotting system, hence looks slightly different
+# from the example showed in the assignment
+```{r, eco=TRUE}
+ggplot(steps_day, aes(x = interval, y = mean, group = day_type, color = day_type)) +
+  geom_line() +
+  facet_wrap(~ day_type, ncol = 1) + 
+  theme_minimal() +
+  labs(title = "Activity Patterns Over Weekdays vs Weekends", x = "Interval", y = "Average Number of Steps")
+```
