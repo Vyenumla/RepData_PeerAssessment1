@@ -4,11 +4,37 @@ output:
   html_document:
     keep_md: true
 ---
+## Set up working directory
+```{r, echo=TRUE}
+setwd("~/R training/Repro Res/RepData_PeerAssessment1")
+dir() # check the files in working dir
+```
+## load standard libraries
+```{r, echo=TRUE}
+## load libraries----
 
+library(dplyr)
+library(data.table)
+library(ggplot2)
+##library(tidyverse)
+
+```
 
 ## Loading and preprocessing the data
 
+```{r, echo=TRUE}
+activity <- read.csv("./activity/activity.csv")
+str(activity)
+head(activity)
+```
+### Calculate total steps for each day
 
+```{r, echo=TRUE}
+histo <- activity %>%
+                group_by(date) %>%
+                        summarize(total = sum(steps, na.rm = TRUE))
+histo
+```
 
 ## What is mean total number of steps taken per day?
 
