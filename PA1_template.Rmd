@@ -32,20 +32,121 @@ head(activity)
 ```{r, echo=TRUE}
 histo <- activity %>%
                 group_by(date) %>%
-                        summarize(total = sum(steps, na.rm = TRUE))
+                        summarize(total_o = sum(steps, na.rm = TRUE)) 
+# total_o represents total steps from original datasets
 histo
 ```
 
 ## What is mean total number of steps taken per day?
+### Plot Histogram for the total steps taken each day
+```{r, echo = TRUE}
+histo %>% ggplot(aes(x=total_o)) +
+geom_histogram(binwidth=600, fill="blue", color="blue", alpha=0.9) +
+        ggtitle("Bin size = 3") +
+        labs(title = "Histogram of Total Steps Each Day", x = "Total Steps", y = "Frequency") +
+        theme_minimal() +
+        theme(plot.title = (element_text(size=15)
+        ))
+histo
+```
+### Calculate and report the mean and median of the total number of steps taken per day
 
-
+```{r}
+mean_median_original <- histo %>%
+        summarize(
+                mean_steps_pd = mean(total_o, na.rm = TRUE),
+                median_steps_pd = median(total_o, na.rm = TRUE)
+                )
+mean_median_original
+```
 
 ## What is the average daily activity pattern?
+### Calculate the average steps in each 5 min time interval over Oct and Nov 2012
+```{r, echo=TRUE}
+avg_steps <- activity %>%
+                group_by(interval) %>%
+                summarize(mean = mean(steps, na.rm = TRUE))
+avg_steps
+```
+### Create a time series plot (decided to used ggplot) avg_steps (y-axis and interval (x-axis)
+```{r}
+p <- ggplot(avg_steps, aes(x = interval, y = mean)) +
+  geom_line(color = "steelblue", linewidth = 1) +   # Line (type = 1)
+  labs(title = "Average Daily Activity Pattern", x = "Interval", y = "Average Steps per Interval") +
+  theme_minimal()
+p
 
+```
 
+### Which 5-minute interval contain maximum average steps over Oct and Nov 2012
+```{r}
+summary(avg_steps$mean) ## to see max value in summary stats
+max_steps_interval <- avg_steps[which.max(avg_steps$mean), "interval"]
+max_steps_interval
 
+max_steps <- avg_steps %>% # to confirm the value and corresponding interval in the same file
+        filter(interval==835)
+max_steps
+
+```
 ## Imputing missing values
+### total number of days/intervals where missing values is NA
+```{r, echo=TRUE}
+rows_NA <- sum(!complete.cases(activity))  # rows with NA
+rows_NA
 
+```
+### Impute NA with average for the interval in activity dataset
+```{r, echo = TRUE}
+# Add interval-wise mean to activity dataset by interval
+activity_impute <- activity %>%
+  left_join(avg_steps, by = "interval") %>%
+        mutate(
+    steps_imputed = coalesce(steps, mean)  
+    # replaces NA with mean value by interval
+  )
+head(activity_impute)
+```
+### Repeat Histogram and mean median calculated with inputed NA dataset
+### Calculate total steps for each day
 
+```{r, echo=TRUE}
+histo_i <- activity_impute %>%
+                group_by(date) %>%
+                        summarize(total_i = sum(steps_imputed, na.rm = TRUE)) 
+# total_i refers to total steps calculated using imputed dataset
+histo_i
+```
 
+## What is mean total number of steps taken per day?
+### Plot Histogram for the total steps taken each day
+```{r, echo = TRUE}
+histo_i %>% ggplot(aes(x=total_i)) +
+geom_histogram(binwidth=600, fill="blue", color="blue", alpha=0.9) +
+        ggtitle("Bin size = 3") +
+        labs(title = "Histogram of Total Steps Each Day - Imputed Dataset", x = "Total Steps", y = "Frequency") +
+        theme_minimal() +
+        theme(plot.title = (element_text(size=15)
+        ))
+histo_i
+```
+### Calculate and report the mean and median of the total number of steps taken
+using imputed dataset
+
+```{r}
+mean_median_imputed <- histo_i %>%
+        summarize(
+                mean_steps_pd = mean(total_i, na.rm = TRUE),
+                median_steps_pd = median(total_i, na.rm = TRUE)
+                )
+mean_median_imputed
+```
+
+### Compare Mean Mediantotal daily steps - Original vs Imputed Datasets
+```{r, echo=TRUE}
+compare <- bind_rows(mean_median_original, mean_median_imputed)
+compare
+# Major differences in mean and minor differences in median value were observed
+```
 ## Are there differences in activity patterns between weekdays and weekends?
+
